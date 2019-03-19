@@ -1,4 +1,4 @@
-# OpendId Connect Relaying Partyin AWS Lambda
+# OpendId Connect Relying Party in AWS Lambda
 
 This project uses [`express-openid-connect`](https://github.com/auth0/express-openid-connect) from Auth0 which implements the only OIDC Certified RP NodeJS module for server based NodeJS applications [`openid-client`](https://www.npmjs.com/package/openid-client).
 
