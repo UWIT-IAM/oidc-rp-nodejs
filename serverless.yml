@@ -3,6 +3,7 @@ service: milesm-oidc-node
 provider:
   name: aws
   runtime: nodejs8.10
+  memorySize: 512
   stage: dev
   region: us-west-1
 
