@@ -39,23 +39,21 @@ This repo uses the AWS Secrets Manager, there are other ways but this is the rec
 
 1. Create the secret in AWS, replace `[secret name]` with something like `test-lambda-oidc`.
 
-    aws secretsmanager create-secret --name [your name] --secret-string file://secrets.json
+       aws secretsmanager create-secret --name [your name] --secret-string file://secrets.json
 
 1. You can later update the secret if you make mistakes using the ARN or the value used in `[your name]`.  When changing secrets you will have to re-deploy your lambda so that invocations do a cold start and use the new values.
 
-    aws secretsmanager update-secret --secret-id [your name] --secret-string file://secrets.json
+       aws secretsmanager update-secret --secret-id [your name] --secret-string file://secrets.json
 
-1. Copy `env-example.yml` to `env.yml` and enter a value for `SECRETS_ARN` that is given to you from the aws `create-secret` command used above.  Ideally our CI tooling is providing this to the deployment on a per environment basis.  Also set `NAME` to be the name of your project, this name will be used for Lambda, API Gateway and S3 buckets.
-
-Also
+1. Copy `env-example.yml` to `env.yml` and enter the value for `SECRETS_ARN` that was given to you from the aws `create-secret` command.  Ideally your CI tooling is providing this to the deployment on a per environment basis.  Also set `NAME` to be the name of your project, this name will be used for Lambda, API Gateway and S3 buckets.
 
 1. Deploy
 
-   sls deploy
+       sls deploy
 
 1. Iterate on just this function (faster deploy)
 
-   sls deploy function -f app
+       sls deploy function -f app
 
 1. Make sure your `.gitignore` is similar to prevent `env.yml` and `secrets.json` from being committed.
 
