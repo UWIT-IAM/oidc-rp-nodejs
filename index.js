@@ -51,7 +51,6 @@ async function buildApp() {
     }
   }));
 
-  // Setup routes, by default, all routes are authenticated
   app.get('/protected', (req, res) => {
     console.log(`User ${req.openid.user.sub} has authenticated.`);
     res.send({
