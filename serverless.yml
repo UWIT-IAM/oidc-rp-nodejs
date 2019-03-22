@@ -1,4 +1,4 @@
-service: milesm-oidc-node
+service: ${file(./env.yml):NAME}
 
 provider:
   name: aws
@@ -6,10 +6,18 @@ provider:
   memorySize: 512
   stage: dev
   region: us-west-1
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "secretsmanager:GetSecretValue"
+      Resource:
+        - "*"
 
 functions:
   app:
     handler: index.handler
+    environment:
+      SECRETS_ARN: ${file(./env.yml):SECRETS_ARN}
     events:
       - http: ANY /
       - http: 'ANY {proxy+}'

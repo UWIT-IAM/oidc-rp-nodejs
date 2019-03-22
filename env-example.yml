@@ -1,0 +1,2 @@
+NAME: "oidc-rp-refrence"
+SECRETS_ARN: "your arn here that points to your uploaded secrets.yml"

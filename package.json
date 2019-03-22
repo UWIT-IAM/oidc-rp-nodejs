@@ -17,10 +17,16 @@
   },
   "homepage": "https://github.com/UWIT-IAM/oidc-rp-node#readme",
   "dependencies": {
+    "aws-sdk": "^2.426.0",
     "body-parser": "^1.18.3",
     "cookie-session": "^1.3.3",
     "express": "^4.16.4",
     "express-openid-connect": "^0.3.0",
     "serverless-http": "^1.9.1"
+  },
+  "devDependencies": {
+    "eslint": "^5.15.3",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-plugin-import": "^2.16.0"
   }
 }
