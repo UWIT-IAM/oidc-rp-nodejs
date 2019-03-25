@@ -1,95 +1,98 @@
-# OpendId Connect Relying Party in AWS Lambda
+# OpendId Connect Relying Party Implemenations
 
-This project uses [`express-openid-connect`](https://github.com/auth0/express-openid-connect) from Auth0 which implements the only OIDC Certified RP NodeJS module for server based NodeJS applications [`openid-client`](https://www.npmjs.com/package/openid-client).
+This repo contains implementations of the OIDC protocol that are known to work with the  UW IdP.  These implementations leverage the various AWS PaaS options to implement OIDC for web user single sign on.
 
-The deployment of the express app was done using the [servereless Express & Node guide](https://serverless.com/blog/serverless-express-rest-api/).  This creates a Cloud Formation stack that wires up the necessary API Gateway, Cloud Watch logs and buckets as well as the Lambda and IAM to make all of them work.
+Some implementations have code while others just have documentation.  This is work in progress and contributions are welcomed.
 
-## OIDC Lambda Invocations
+All code must implement a [certified OIDC RP library](https://openid.net/developers/certified/) either directly or via a wrapper in a language specific web stack (Express, Flask etc).
 
-This code only uses 125MB, but, for faster start time it's configured to be a 512MB Lambda.
+## Overview of Options
 
-1. First Invocation (100ms) - User makes an unauthenticated request to `/`, Lambda then redirects you to the IdP.
-2. Second Invocation (500ms) - After authenticating with the IdP, you are sent back to the Lambda's configured redirect URL (default of `/callback`).
-3. While at the `/callback` url, the Lambda implements the OIDC protocol, sets some cookies and redirects you to `/`.
-4. Third Invocation (100ms) - Your request to `/` is now authenticated and given a response.
+These options go from the most simplified architectures to the more complex.  It is up to you to choose the best fit.
 
-Please see the pricing page for Lambdas to determine how this 700ms of time can impact your AWS bill.
+### Container
 
-## Install
+- NodeJS - `/Container`
+- Python - https://github.com/UWIT-IAM/oidc-rp-python
 
-1. Make sure you read over the examples and documenation of the [express-openid-connect](https://github.com/auth0/express-openid-connect) module that this implements as it is capable of more than what is implemented in `index.js`.
+While this does not implement any AWS services directly, it is an example of something that is portable across cloud providers and is agnostic to a cloud's OSI Layer 7 ingress.
 
-1. Follow the [install and quickstart for serverless](https://serverless.com/framework/docs/providers/aws/guide/quick-start/).
+### ELB (with OIDC) -> Lambda
 
-1. Make sure you can run a Hello World lambda using the serverless [tutorial](https://serverless.com/blog/serverless-express-rest-api/)
+- Documentation - [`/ELBWithOIDCToLambda`](./ELBWithOIDCToLambda/README.md)
 
-1. Register an Alpha oidc client by emailing your request to iam-support@uw.edu.  Please provide us with the URL that will be serving your Lambda.  Ideally this wont be the one that API Gateway gives you and instead youve done the work required with DNS/R53 to front your lambda with something better.
+#### AWS Services
 
-1. Provision your secrets using the Secrets and Variables section below.
+- ELB
+- Lambda
 
-1. Replace `index.js` from your hello world with the one from this repo and make sure you have the dependencies form this `package.json` as well.
+#### When To Use
 
-### Secrets and Variables
+- You want the least expensive and least complex solution
+- You want the authentication protocol managed for you
+- You are comfortable with doing 100% of the backend route authorization
 
-This repo uses the AWS Secrets Manager, there are other ways but this is the recommended option.
+#### When Not To Use
 
-#### Provision into AWS Secrets Manager
+- You need a robust API Gateway that implements scoped based authorization for you.
+- You have multiple OAuth 2.0 clients connecting to your backend.
 
-1. Copy `secrets-example.json` to `secrets.json` and edit to have values that work for your app.
+### ELB -> Lambda (with OIDC)
 
-1. Create the secret in AWS, replace `[secret name]` with something like `test-lambda-oidc`.
+- NodeJS - [`/ELBToLambdaWithOIDC`](./ELBToLambdaWithOIDC/README.md).
 
-       aws secretsmanager create-secret --name [your name] --secret-string file://secrets.json
+#### AWS Services
 
-1. You can later update the secret if you make mistakes using the ARN or the value used in `[your name]`.  When changing secrets you will have to re-deploy your lambda so that invocations do a cold start and use the new values.
+- ELB
+- Lambda
 
-       aws secretsmanager update-secret --secret-id [your name] --secret-string file://secrets.json
+#### When To Use
 
-1. Copy `env-example.yml` to `env.yml` and enter the value for `SECRETS_ARN` that was given to you from the aws `create-secret` command.  Ideally your CI tooling is providing this to the deployment on a per environment basis.  Also set `NAME` to be the name of your project, this name will be used for Lambda, API Gateway and S3 buckets.
+- For the same reasons as the option above this with the exception that you must manage the OIDC protocol yourself with this option in your Lambda.
 
-1. Deploy
+#### When Not To Use
 
-       sls deploy
+- For the same reasons as the option above this one.
 
-1. Iterate on just this function (faster deploy)
+### API Gateway -> Lambda (with OIDC)
 
-       sls deploy function -f app
+Documentation is available at [`/APIToLambdaWithOIDC`](./APIToLambdaWithOIDC/README.md).
 
-1. Make sure your `.gitignore` is similar to prevent `env.yml` and `secrets.json` from being committed.
+#### AWS Services
 
-#### secrets.json Documenation
+- API Gateway
+- Lambda
 
-```JavaScript
-{
-  // Store app specific stuff here
-  "app": {
-    // Used by express-session to encrypt cookies
-    "sessionSecret": "your express session secret"
-  },
-  // Store only OIDC stuff here
-  "oidc": {
-    // The URL of the UW IdP to use
-    "idpURL":       "url for the idp",
+#### When To Use
 
-    // The URL of your Lambda function, this must match your registred redirect_uri when you created your client with the IDP... https://yoururl.com/callback will be whats registered.  This setting here should not include "/callback"
-    "baseURL":      "your function url",
+- You need the features and capabilities of an API Gateway
 
-    // The IdP provided OIDC Client ID
-    "clientID":     "your oidc client id",
+#### When Not To Use
 
-    //The IdP provided OIDC Client Secret
-    "clientSecret": "your oidc client secret",
+- The added service costs of API Gateway is too high.
+- You need authorization tightly integrated with your API Gateway (see the option below instead)
 
-    //Space seperated OIDC scopes, "openid" at a minimum is required.  You define these during client registration with the IdP.
-    "scope":        "space seperated oidc scopes"
-  }
-}
-```
+### API Gateway -> Cognito -> Federated SSO
 
-## Integration with AWS ALB
+Documentation is available at [`/APIToCognitoFederatedIdP`](./APIToCognitoFederatedIdP/README.md).
 
-Serverless uses Cloud Formation to auto provision and tear down AWS resources. Doing that with an ALB isn't possible [just yet](https://github.com/serverless/serverless/issues/5572).  In the meantime, you can create your ALB via other means (manual or CLI) and configure this Lambda as the backend.
+A complex but feature rich architecture which enables you to own and control OAuth 2.0 clients with cognito, users in a user pool and federated SSO with the UW IdP using OIDC or SAML for SSSO.
 
-## TO DO
+#### AWS Services
 
-This repo will be going through a lot of changes in the next few weeks and this top level example will be one of many directories of code and or documenation on how to do SSO with AWS and the UW IdP.
+- API Gateway
+- Cognito User Pools
+- Cognito Federated SSO
+- Cognito Lambda Triggers
+- Lambda
+
+#### When To Use
+
+- You have a robust REST API
+- The API is accessed by multiple OAuth 2.0 clients
+- You have complex authorization needs that are better suited to be implemented in a higher level of your stack (API Gateway)
+
+#### When Not To Use
+
+- You have a single OAuth 2.0 client
+- Constrained by costs
