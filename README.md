@@ -56,7 +56,7 @@ While this does not implement any AWS services directly, it is an example of som
 
 ### API Gateway -> Lambda (with OIDC)
 
-Documentation is available at [`/APIToLambdaWithOIDC`](./APIToLambdaWithOIDC/).
+- NodeJS - [`/APIToLambdaWithOIDC`](./APIToLambdaWithOIDC/).
 
 #### AWS Services
 
