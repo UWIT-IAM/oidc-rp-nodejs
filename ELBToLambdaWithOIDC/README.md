@@ -8,7 +8,7 @@
 
 These steps below have been performed and are known to work.
 
-1. Follow the steps in `../APIToLambdaWithOIDC` which uses the Serverless framework as a way to deploy and manage your Lambda
+1. Follow the steps in [`../APIToLambdaWithOIDC`](../APIToLambdaWithOIDC) which uses the Serverless framework as a way to deploy and manage your Lambda
 1. Configure an ELB as an Application Load Balancer (ALB)
 1. Add a Target Group and a Target to your ALB
 1. Point your target to your Lambda created in step 1
