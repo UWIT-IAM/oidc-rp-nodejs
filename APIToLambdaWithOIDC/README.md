@@ -1,6 +1,6 @@
 # API Gateway -> Lambda (with OIDC)
 
-This project uses [`express-openid-connect`](https://github.com/auth0/express-openid-connect) from Auth0 which implements the only OIDC Certified RP NodeJS module for server based NodeJS applications [`openid-client`](https://www.npmjs.com/package/openid-client).
+This project uses implements the only OIDC Certified RP NodeJS module for server based NodeJS applications [`openid-client`](https://www.npmjs.com/package/openid-client).  It also uses Passport.js middleware.
 
 The deployment of the express app was done using the [servereless Express & Node guide](https://serverless.com/blog/serverless-express-rest-api/).  This creates a Cloud Formation stack that wires up the necessary API Gateway, Cloud Watch logs and buckets as well as the Lambda and IAM to make all of them work.
 
@@ -21,7 +21,7 @@ Please see the pricing page for Lambdas to determine how this 700ms of time can 
 
 ## Install
 
-1. Make sure you read over the examples and documenation of the [express-openid-connect](https://github.com/auth0/express-openid-connect) module that this implements as it is capable of more than what is implemented in `index.js`.
+1. Make sure you read over the examples and documenation of the [openid-client](https://github.com/panva/node-openid-client) module that this implements as it is capable of more than what is implemented in `index.js`.
 
 1. Follow the [install and quickstart for serverless](https://serverless.com/framework/docs/providers/aws/guide/quick-start/).
 
@@ -89,6 +89,10 @@ This repo uses the AWS Secrets Manager, there are other ways but this is the rec
   }
 }
 ```
+
+## UW IdP Specifics
+
+For now look at the different routes in `index.js` to see how to request 2FA with Duo as well as re-auth.
 
 ## Integration with AWS ALB
 
