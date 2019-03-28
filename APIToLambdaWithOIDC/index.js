@@ -47,14 +47,17 @@ async function buildApp() {
 
   app.use(session({
     name:   'session',
-    secret: config.app.sessionSecret
+    secret: config.app.sessionSecret,
+    secure: true,
+    httpOnly: true
   }));
 
   if (!uwIssuer) {
     await Issuer.discover(config.oidc.idpURL)
       .then((issuer) => {
         uwIssuer = issuer;
-        console.log('Discovered issuer %s %O', uwIssuer.issuer, uwIssuer.metadata);
+        console.log(`Discovered issuer ${uwIssuer.issuer}`);
+        // console.log('Discovered issuer %s %O', uwIssuer.issuer, uwIssuer.metadata);
       });
   }
 
@@ -70,14 +73,20 @@ async function buildApp() {
     scope: config.oidc.scope
   };
 
-  passport.use('oidc', new Strategy({ client, params }, (tokenset, userinfo, done) => {
+  const passReqToCallback = true;
+
+  passport.use('oidc', new Strategy({ client, params, passReqToCallback }, (req, tokenset, userinfo, done) => {
+    console.log(`${userinfo.sub} has logged in`);
+
     // NOTE: For any 2FA authn requests you must also check the claims.acr
     // ..to know for sure 2fa actually occured, right now the IdP is NOT sending this back
     // if (!tokenset.id_token.acr &&
     //     !tokenset.id_token.acr.value == config.secondFactor.acr.value) {
     //   return(done('2FA Did Not Occur As Requested'));
     // }
-    console.log(`${userinfo.sub} has logged in`);
+
+    // Set the cookie to expire at the same time as the OIDC Id Token
+    req.sessionOptions.maxAge = new Date(tokenset.claims.exp * 1000) - new Date();
 
     // remove the 'userinfo' param to the Strategy if you dont need userInfo data
     // removing this will cut your lambda runtime in half as it's a seperate request to the IdP userInfo endpoint
@@ -101,6 +110,9 @@ async function buildApp() {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  // authentication callback
+  app.get('/callback', passport.authenticate('oidc', { successRedirect: '/', failureRedirect: '/login' }));
+
   // This will require auth
   app.get('/auth', passport.authenticate('oidc'));
 
@@ -116,14 +128,18 @@ async function buildApp() {
     acr_values: config.secondFactor
   }));
 
-  // authentication callback
-  app.get('/callback', passport.authenticate('oidc', { successRedirect: '/', failureRedirect: '/login' }));
-
   app.get('/', (req, res) => {
-    res.json({
-      message: 'Use /auth to login, /reauth for forced reauth, /2fa for DUO and /reauth-2fa',
-      user: req.user
-    });
+    // when a session expires, the passport will no longer exist
+    if (!req.session || !req.session.passport) {
+      res.redirect(401, '/auth');
+    } else {
+      // "req.session.passport.user" is the same as "req.user"
+      res.json({
+        message: 'Use /auth to login, /reauth for forced reauth, /2fa for DUO and /reauth-2fa',
+        netid: req.user.claims.sub,
+        session: req.session
+      });
+    }
   });
 }
 
