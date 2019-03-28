@@ -1,3 +1,4 @@
+const crypto       = require('crypto');
 const serverless   = require('serverless-http');
 const AWS          = require('aws-sdk');
 const bodyParser   = require('body-parser');
@@ -70,7 +71,9 @@ async function buildApp() {
 
   const params = {
     // ... any authorization request parameters go here
-    scope: config.oidc.scope
+    scope: config.oidc.scope,
+    // for CSRF protection, state param, the openid-client module will verify it matches on the response form the IdP
+    state: crypto.randomBytes(64).toString('hex')
   };
 
   const passReqToCallback = true;
