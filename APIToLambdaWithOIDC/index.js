@@ -69,8 +69,8 @@ async function buildApp() {
     response_types: ['code']
   });
 
+  // ... any authorization request parameters go here
   const params = {
-    // ... any authorization request parameters go here
     scope: config.oidc.scope,
     // for CSRF protection, state param, the openid-client module will verify it matches on the response form the IdP
     state: crypto.randomBytes(64).toString('hex')
@@ -132,15 +132,14 @@ async function buildApp() {
   }));
 
   app.get('/', (req, res) => {
-    // when a session expires, the passport will no longer exist
-    if (!req.session || !req.session.passport) {
+    if (!req.isAuthenticated()) {
       res.redirect(401, '/auth');
     } else {
-      // "req.session.passport.user" is the same as "req.user"
       res.json({
         message: 'Use /auth to login, /reauth for forced reauth, /2fa for DUO and /reauth-2fa',
         netid: req.user.claims.sub,
-        session: req.session
+        user: req.user.info,
+        claims: req.user.claims
       });
     }
   });

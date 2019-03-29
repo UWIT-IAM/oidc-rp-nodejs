@@ -1,12 +1,14 @@
 # OpendId Connect Relying Party Implemenations
 
+The work in this repo is currently alpha and exploratory.
+
 This repo contains implementations of the OIDC protocol that are known to work with the  UW IdP.  These implementations leverage the various AWS PaaS options to implement OIDC for web user single sign on.
 
 Some implementations have code while others just have documentation.  This is work in progress and contributions are welcomed.
 
 All code must implement a [certified OIDC RP library](https://openid.net/developers/certified/) either directly or via a wrapper in a language specific web stack (Express, Flask etc).
 
-## Overview of Options
+## OPTIONS
 
 These options go from the most simplified architectures to the more complex.  It is up to you to choose the best fit.
 
@@ -96,3 +98,35 @@ A complex but feature rich architecture which enables you to own and control OAu
 
 - You have a single OAuth 2.0 client
 - Constrained by costs
+
+## IMPLEMENTATION REQUIREMENTS
+
+Web applications that implement OIDC usually have many layers of modules or libraries and each must be configured securely as well as have the capabilities for 2FA and reauth.  The modules should also have the flexibility to modify/add request parameters in order to meet any compliance profiles like iGov or Heart that the UW may decide to adhere to.
+
+An example stack with NodeJS is `express` -> `passport` with `cookie-session` -> `openid-client`. An implementation of this combination with the flexibility mentioned does not exist.  Therefore one needs to be created for the community as a refrence implementation.
+
+So, that raises the question of what should a refrence implementation implement in a complex web stack beyond what the OIDC compliant library already implements as a default?
+
+### Required
+
+- Setting of the `state` param
+- A session of some kind that expires no later than the OIDC Id Token `exp` value
+- Capability to pass `prompt=login` to require the user to re-authenticate
+- Capability to pass the `acr` param to require 2fa from the user
+- A stack that does not send OIDC or session related error messages to the end user
+
+### Recommended
+
+- Flexible and simple to use middleware that implements PassportJS
+- Simple to use login and logout methods
+
+### Express Examples
+
+- This repo at [./APIToLambdaWithOIDC](./APIToLambdaWithOIDC)
+- Login.gov at https://github.com/18F/identity-oidc-expressjs
+
+### Next Steps
+
+- Continue building on the examples in this repository
+- Build more Python examples
+- Create refrence implementations that are easy to clone etc
