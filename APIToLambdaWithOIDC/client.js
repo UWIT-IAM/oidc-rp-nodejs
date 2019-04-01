@@ -20,11 +20,13 @@ async function init(config) {
     response_types: ['code']
   });
 
-  // ... any authorization request parameters go here
+  // extra authorization request parameters go here
   const params = {
     scope: config.oidc.scope,
-    // for CSRF protection, state param, the openid-client module will verify it matches on the response form the IdP
-    state: crypto.randomBytes(64).toString('hex')
+    // for CSRF protection
+    state: crypto.randomBytes(64).toString('hex'),
+    // binds the OIDC Id token to the users session
+    nonce: crypto.randomBytes(64).toString('hex')
   };
 
   return {
