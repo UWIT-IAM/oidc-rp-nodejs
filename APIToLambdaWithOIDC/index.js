@@ -34,6 +34,11 @@ async function getSecret(manager, arn) {
   }
 }
 
+function ensureAuthenticated(req, res, next) {
+  if (req.isAuthenticated()) { return next(); }
+  res.redirect('/login/oidc');
+}
+
 async function buildApp() {
   if (!config.oidc) {
     const manager = new AWS.SecretsManager();
@@ -94,6 +99,7 @@ async function buildApp() {
     // remove the 'userinfo' param to the Strategy if you dont need userInfo data
     // removing this will cut your lambda runtime in half as it's a seperate request to the IdP userInfo endpoint
     const user = {
+      id: tokenset.claims.sub,
       claims: tokenset.claims,
       info: userinfo
     };
@@ -101,12 +107,12 @@ async function buildApp() {
   }));
 
   passport.serializeUser((user, done) => {
-    console.log(`Serializing ${user.claims.sub}`);
+    console.log(`Serializing ${user.id}`);
     done(null, user);
   });
 
   passport.deserializeUser((user, done) => {
-    console.log(`DeSerializing ${user.claims.sub}`);
+    console.log(`DeSerializing ${user.id}`);
     done(null, user);
   });
 
@@ -131,17 +137,33 @@ async function buildApp() {
     acr_values: config.secondFactor
   }));
 
-  app.get('/', (req, res) => {
-    if (!req.isAuthenticated()) {
-      res.redirect(401, '/auth');
-    } else {
-      res.json({
-        message: 'Use /auth to login, /reauth for forced reauth, /2fa for DUO and /reauth-2fa',
-        netid: req.user.claims.sub,
-        user: req.user.info,
-        claims: req.user.claims
-      });
-    }
+  // This will eventually redirect the user to the login page
+  app.get('/logout', (req, res) => {
+    req.logout();
+    res.redirect('/');
+  });
+
+  // Let the user choose how to interact with the IdP
+  app.get('/login/oidc', (req, res) => {
+    res.send('<a href="/auth">/auth</a> to login <br> <a href="/reauth">/reauth</a> for forced reauth <br> <a href="/2fa">/2fa</a> for DUO and <a href="/reauth-2fa">/reauth-2fa</a>');
+  });
+
+  // A route protected by Passport JS and our session
+  app.get('/', ensureAuthenticated, (req, res) => {
+    let msg = 'To logout use <a href="/logout">/logout</a>';
+    const data = {
+      netid: req.user.id,
+      user: req.user.info,
+      claims: req.user.claims
+    };
+    msg = `${msg}<pre>${JSON.stringify(data, null, '\t')}</pre>`;
+
+    res.send(msg);
+  });
+
+  // Do nothing route
+  app.get('/protected', ensureAuthenticated, (req, res) => {
+    res.send('A simple route for those that are authenticated');
   });
 }
 
