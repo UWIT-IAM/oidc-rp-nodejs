@@ -32,12 +32,14 @@ async function buildApp() {
   passport.use('oidc', new Strategy(oidc, (req, tokenset, userinfo, done) => {
     console.log(`${userinfo.sub} has logged in`);
 
-    // NOTE: For any 2FA authn requests you must also check the claims.acr
-    // ..to know for sure 2fa actually occured, right now the IdP is NOT sending this back
-    // if (!tokenset.id_token.acr &&
-    //     !tokenset.id_token.acr.value == config.secondFactor.acr.value) {
-    //   return(done('2FA Did Not Occur As Requested'));
-    // }
+    // For any 2FA authn requests we must also check the claims.acr matches what we sent to the IdP
+    if ((req.session.check2fa && !tokenset.claims.acr)
+      || (req.session.check2fa && tokenset.claims.acr !== config.secondFactor.id_token.acr.value)) {
+      return (done('2FA Did Not Occur As Requested'));
+    }
+
+    // If we did a 2fa check, remove the requirement so other less protected routes will still work
+    req.session.check2fa = null;
 
     // Set the cookie to expire at the same time as the OIDC Id Token
     req.sessionOptions.maxAge = new Date(tokenset.claims.exp * 1000) - new Date();

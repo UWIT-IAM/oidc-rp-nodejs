@@ -14,10 +14,18 @@ function init(app, config, passport) {
   app.get('/reauth', passport.authenticate('oidc', { prompt: 'login' }));
 
   // This will require the user to authn with a second factor
-  app.get('/2fa', passport.authenticate('oidc', { acr_values: config.secondFactor }));
+  // check2fa is essential and required, we must check claims returned to us and this is the way to signal that check to happen
+  app.get('/2fa', (req, res, next) => {
+    req.session.check2fa = true;
+    next();
+  }, passport.authenticate('oidc', { claims: config.secondFactor }));
 
   // 2fa and reauth, if user is already authenticated via /auth and you want 2fa then the prompt param here is required
-  app.get('/reauth-2fa', passport.authenticate('oidc', {
+  // check2fa is essential and required, we must check claims returned to us and this is the way to signal that check to happen
+  app.get('/reauth-2fa', (req, res, next) => {
+    req.session.check2fa = true;
+    next();
+  }, passport.authenticate('oidc', {
     prompt: 'login',
     acr_values: config.secondFactor
   }));
