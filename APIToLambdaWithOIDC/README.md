@@ -14,7 +14,7 @@ This code only uses 125MB, but, for faster start time it's configured to be a 51
 
 1. First Invocation (100ms) - User makes an unauthenticated request to `/`, Lambda then redirects you to the IdP.
 2. Second Invocation (500ms) - After authenticating with the IdP, you are sent back to the Lambda's configured redirect URL (default of `/callback`).
-3. While at the `/callback` url, the Lambda implements the OIDC protocol, sets some cookies and redirects you to `/`.
+3. While at the `/callback` url, the Lambda implements the OIDC protocol and verifies the response form the IdP.  It then queries the IdP User Info endpoint, gets a response, sets some cookies and redirects you to `/`.
 4. Third Invocation (100ms) - Your request to `/` is now authenticated and given a response.
 
 Please see the pricing page for Lambdas to determine how this 700ms of time can impact your AWS bill.
@@ -32,6 +32,8 @@ Please see the pricing page for Lambdas to determine how this 700ms of time can 
 1. Provision your secrets using the Secrets and Variables section below.
 
 1. Replace `index.js` from your hello world with the one from this repo and make sure you have the dependencies form this `package.json` as well.
+
+1. `npm install -g serverless`
 
 ### Secrets and Variables
 
@@ -86,9 +88,20 @@ This repo uses the AWS Secrets Manager, there are other ways but this is the rec
 
     //Space seperated OIDC scopes, "openid" at a minimum is required.  You define these during client registration with the IdP.
     "scope":        "space seperated oidc scopes"
-  }
+  },
+  // Optional, if present enables OIDC AuthN of private_key_jwt instead of the default client_secret_basic.
+  "jwk": "a valid JWK"
 }
 ```
+
+#### Optional Private Key JWT
+
+To enable this stronger method of authenticating your relying party with the UW IdP do the following.
+
+1. `npm run genkeys` (this runs `/bin/generate-keys`).
+1. Copy the generated value from `keys/full_key.jwk`.
+1. Place the copied jwk as the value for `jwk` in `secrets.json`.
+1. Update your AWS secret using the instructions above.
 
 ## UW IdP Specifics
 
