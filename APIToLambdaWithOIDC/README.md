@@ -4,6 +4,8 @@ This project implements the only OIDC Certified RP NodeJS module for server base
 
 The deployment of the express app was done using the [servereless Express & Node guide](https://serverless.com/blog/serverless-express-rest-api/).  This creates a Cloud Formation stack that wires up the necessary API Gateway, Cloud Watch logs and buckets as well as the Lambda and IAM to make all of them work.
 
+**Caution**: This can often result in timeouts to the IdP `token_endpoint` of `/oidc/token` after user authn to the IdP.  This was not a problem at all during the time commit `4adf571` was built 4/5.  However, as of 4/18 with that same commit these timeouts can occur and I'm not sure what is causing it.  The timeouts don't seem to be actual timeouts but instead maybe AWS VPC/networking related (even though this Lambda is running outside of a VPC).
+
 ## Prerequisites
 
 1. Please make sure you have read [the overview](../README.md) of this solution.
@@ -90,7 +92,9 @@ This repo uses the AWS Secrets Manager, there are other ways but this is the rec
     "scope":        "space seperated oidc scopes"
   },
   // Optional, if present enables OIDC AuthN of private_key_jwt instead of the default client_secret_basic.
-  "jwk": "a valid JWK"
+  "jwkPrivate": "a valid JWK"
+  // Optional, used with jwkPrivate... see secrets-example.json for more
+  "jwkPublic": "a valid JWK"
 }
 ```
 

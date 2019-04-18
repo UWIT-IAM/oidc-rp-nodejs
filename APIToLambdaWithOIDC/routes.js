@@ -4,6 +4,16 @@ function ensureAuthenticated(req, res, next) {
 }
 
 function init(app, config, passport) {
+  // optional, JWKS_URI
+  app.get('/jwks', (req, res) => {
+    console.log('JWKS Route Requested');
+    if (config.jwkPublic) {
+      res.json(config.jwkPublic);
+    } else {
+      res.status(404).end();
+    }
+  });
+
   // authentication callback
   app.get('/callback', passport.authenticate('oidc', { successRedirect: '/', failureRedirect: '/login' }));
 

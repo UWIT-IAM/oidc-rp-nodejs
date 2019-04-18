@@ -1,14 +1,32 @@
-const serverless   = require('serverless-http');
-const bodyParser   = require('body-parser');
-const express      = require('express');
-const passport     = require('passport');
-const session      = require('cookie-session');
-const { Strategy } = require('openid-client');
-const secrets      = require('./secrets');
-const client       = require('./client');
-const routes       = require('./routes');
+const serverless     = require('serverless-http');
+const bodyParser     = require('body-parser');
+const express        = require('express');
+const winston        = require('winston');
+const expressWinston = require('express-winston');
+const passport       = require('passport');
+const session        = require('cookie-session');
+const { Strategy }   = require('openid-client');
+const secrets        = require('./secrets');
+const client         = require('./client');
+const routes         = require('./routes');
 
 const app = express();
+
+// https://github.com/winstonjs/winston/issues/1594
+delete console['_stdout'];
+delete console['_stderr'];
+
+app.use(expressWinston.logger({
+  transports: [
+    new winston.transports.Console()
+  ],
+  format: winston.format.combine(
+    winston.format.json()
+  ),
+  msg: 'HTTP {{res.statusCode}} {{req.method}} {{req.url}}',
+  expressFormat: true,
+  colorize: false
+}));
 
 async function buildApp() {
   const config = await secrets.init({
@@ -67,6 +85,21 @@ async function buildApp() {
   app.use(passport.session());
 
   routes.init(app, config, passport);
+
+  app.use(expressWinston.errorLogger({
+    transports: [
+      new winston.transports.Console()
+    ],
+    format: winston.format.combine(
+      winston.format.json()
+    )
+  }));
+
+  // make sure we don't send errors to the user
+  app.use((error, req, res, next) => {
+    console.error(error);
+    res.status(500).send('Server Error');
+  });
 }
 
 // Export our app
