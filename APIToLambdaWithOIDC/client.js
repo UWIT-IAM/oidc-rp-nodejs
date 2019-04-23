@@ -21,7 +21,6 @@ async function init(config) {
     const algo = config.jwkPrivate.keys[0].alg;
     const clientConfig = {
       client_id: config.oidc.clientID,
-      client_secret: config.oidc.clientSecret,
       redirect_uris: [`${config.oidc.baseURL}/callback`],
       response_types: ['code', 'id_token', 'token id_token', 'code id_token', 'code token', 'code token id_token'],
       token_endpoint_auth_method: 'private_key_jwt',
