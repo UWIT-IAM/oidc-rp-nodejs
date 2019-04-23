@@ -48,25 +48,27 @@ function init(app, config, passport) {
 
   // Let the user choose how to interact with the IdP
   app.get('/login/oidc', (req, res) => {
-    res.send('<a href="/auth">/auth</a> to login <br> <a href="/reauth">/reauth</a> for forced reauth <br> <a href="/2fa">/2fa</a> for DUO and <a href="/reauth-2fa">/reauth-2fa</a>');
+    res.render('home');
   });
 
-  // A route protected by Passport JS and our session
+  // A route protected by Passport JS
   app.get('/', ensureAuthenticated, (req, res) => {
-    let msg = 'To logout use <a href="/logout">/logout</a>';
-    const data = {
+    const data = JSON.stringify({
       netid: req.user.id,
       user: req.user.info,
       claims: req.user.claims
-    };
-    msg = `${msg}<pre>${JSON.stringify(data, null, '\t')}</pre>`;
+    }, null, '\t');
 
-    res.send(msg);
+    res.render('authenticated', {
+      helpers: { userData: data }
+    });
   });
 
   // Do nothing route
   app.get('/protected', ensureAuthenticated, (req, res) => {
-    res.send('A simple route for those that are authenticated');
+    res.render('simple', {
+      helpers: { netid: req.user.id }
+    });
   });
 }
 

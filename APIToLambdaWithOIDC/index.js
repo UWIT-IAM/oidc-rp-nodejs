@@ -3,6 +3,7 @@ const bodyParser     = require('body-parser');
 const express        = require('express');
 const winston        = require('winston');
 const expressWinston = require('express-winston');
+const handlebars     = require('express-handlebars');
 const passport       = require('passport');
 const session        = require('cookie-session');
 const { Strategy }   = require('openid-client');
@@ -42,6 +43,9 @@ async function buildApp() {
     secure: true,
     httpOnly: true
   }));
+
+  app.engine('handlebars', handlebars({ defaultLayout: 'main' }));
+  app.set('view engine', 'handlebars');
 
   const oidc = await client.init(config);
 
@@ -98,7 +102,7 @@ async function buildApp() {
   // make sure we don't send errors to the user
   app.use((error, req, res, next) => {
     console.error(error);
-    res.status(500).send('Server Error');
+    res.render('error');
   });
 }
 
