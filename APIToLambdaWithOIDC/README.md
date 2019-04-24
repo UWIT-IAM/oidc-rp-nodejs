@@ -4,7 +4,7 @@ This project implements the only OIDC Certified RP NodeJS module for server base
 
 The deployment of the express app was done using the [servereless Express & Node guide](https://serverless.com/blog/serverless-express-rest-api/).  This creates a Cloud Formation stack that wires up the necessary API Gateway, Cloud Watch logs and buckets as well as the Lambda and IAM to make all of them work.
 
-**Caution**: This can often result in timeouts to the IdP `token_endpoint` of `/oidc/token` after user authn to the IdP.  This was not a problem at all during the time commit `4adf571` was built 4/5.  However, as of 4/18 with that same commit these timeouts can occur and I'm not sure what is causing it.  The timeouts don't seem to be actual timeouts but instead maybe AWS VPC/networking related (even though this Lambda is running outside of a VPC).
+**Caution**: After the first load of a newly deployed lambda you often timeouts to the IdP `token_endpoint` of `/oidc/token` after user authn to the IdP.  This was not a problem at all during the time commit `4adf571` was built 4/5.  However, as of 4/18 with that same commit these timeouts can occur and I'm not sure what is causing it.  This could be something not setup right with the async nature of this Lambda and or the current verbose logging settings on the eval IdP resulting in requests taking too long to complete.
 
 ## Prerequisites
 

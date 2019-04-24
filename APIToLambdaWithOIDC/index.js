@@ -54,14 +54,21 @@ async function buildApp() {
   passport.use('oidc', new Strategy(oidc, (req, tokenset, userinfo, done) => {
     console.log(`${userinfo.sub} has logged in`);
 
+    // For any forced reauth, we must make sure that the re-auth took place by using token.auth_time
+    const maxAge = 30.0;
+    if (req.session.checkReauth && (new Date() - new Date(tokenset.claims.auth_time * 1000)) / 1000 > maxAge) {
+      return (done(`The SSO authentication session is too old and greater than ${maxAge}`));
+    }
+
     // For any 2FA authn requests we must also check the claims.acr matches what we sent to the IdP
     if ((req.session.check2fa && !tokenset.claims.acr)
       || (req.session.check2fa && tokenset.claims.acr !== config.secondFactor.id_token.acr.value)) {
-      return (done('2FA Did Not Occur As Requested'));
+      return (done(`2FA for ${tokenset.claims.sub} Did Not Occur As Requested`));
     }
 
-    // If we did a 2fa check, remove the requirement so other less protected routes will still work
-    req.session.check2fa = null;
+    // If we did other checks, make sure they arent re-introduce
+    req.session.check2fa    = null;
+    req.session.checkReauth = null;
 
     // Set the cookie to expire at the same time as the OIDC Id Token
     req.sessionOptions.maxAge = new Date(tokenset.claims.exp * 1000) - new Date();

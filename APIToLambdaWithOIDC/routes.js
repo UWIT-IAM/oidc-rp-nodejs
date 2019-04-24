@@ -6,7 +6,6 @@ function ensureAuthenticated(req, res, next) {
 function init(app, config, passport) {
   // optional, JWKS_URI
   app.get('/jwks', (req, res) => {
-    console.log('JWKS Route Requested');
     if (config.jwkPublic) {
       res.json(config.jwkPublic);
     } else {
@@ -21,7 +20,12 @@ function init(app, config, passport) {
   app.get('/auth', passport.authenticate('oidc'));
 
   // This will force re-auth at the IdP even if the user already has authenticated elsewhere
-  app.get('/reauth', passport.authenticate('oidc', { prompt: 'login' }));
+  app.get('/reauth', (req, res, next) => {
+    req.session.checkReauth = true;
+    next();
+  }, passport.authenticate('oidc', {
+    prompt: 'login'
+  }));
 
   // This will require the user to authn with a second factor
   // check2fa is essential and required, we must check claims returned to us and this is the way to signal that check to happen
@@ -34,10 +38,11 @@ function init(app, config, passport) {
   // check2fa is essential and required, we must check claims returned to us and this is the way to signal that check to happen
   app.get('/reauth-2fa', (req, res, next) => {
     req.session.check2fa = true;
+    req.session.checkReauth = true;
     next();
   }, passport.authenticate('oidc', {
     prompt: 'login',
-    acr_values: config.secondFactor
+    claims: config.secondFactor
   }));
 
   // This will eventually redirect the user to the login page
